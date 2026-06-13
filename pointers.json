@@ -57,7 +57,7 @@
       "blurb": "A climber made of the rope he climbs.",
       "path": "/pointers/rope-climber/",
       "order": 60,
-      "published": false,
+      "published": true,
       "theme": null
     }
   ]
