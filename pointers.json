@@ -1,0 +1,64 @@
+{
+  "pointers": [
+    {
+      "id": "puppet-sheet",
+      "title": "The Puppet and the Sheet",
+      "type": "text",
+      "blurb": "The first one. An observer unravelling into its own background.",
+      "path": "/pointers/puppet-sheet/",
+      "order": 10,
+      "published": true,
+      "theme": null
+    },
+    {
+      "id": "mirror-eye",
+      "title": "The Mirror Eye",
+      "type": "text",
+      "blurb": "Try to picture an eye seeing itself. Catch the cheat.",
+      "path": "/pointers/mirror-eye/",
+      "order": 20,
+      "published": true,
+      "theme": null
+    },
+    {
+      "id": "chair-before-the-word",
+      "title": "The Chair Before the Word",
+      "type": "text",
+      "blurb": "The gap where a shape is known before the label lands.",
+      "path": "/pointers/chair-before-the-word/",
+      "order": 30,
+      "published": true,
+      "theme": null
+    },
+    {
+      "id": "play-doh-man",
+      "title": "The Play-Doh Man",
+      "type": "text",
+      "blurb": "Chop the body and look for the piece the mind calls me.",
+      "path": "/pointers/play-doh-man/",
+      "order": 40,
+      "published": true,
+      "theme": null
+    },
+    {
+      "id": "the-letter",
+      "title": "The Letter",
+      "type": "text",
+      "blurb": "Look for the chooser in the act of choosing.",
+      "path": "/pointers/the-letter/",
+      "order": 50,
+      "published": true,
+      "theme": null
+    },
+    {
+      "id": "rope-climber",
+      "title": "The Rope Climber",
+      "type": "image-series",
+      "blurb": "A climber made of the rope he climbs.",
+      "path": "/pointers/rope-climber/",
+      "order": 60,
+      "published": false,
+      "theme": null
+    }
+  ]
+}

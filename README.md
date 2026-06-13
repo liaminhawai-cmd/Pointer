@@ -1,13 +1,54 @@
-# The Mirror Eye
+# Pointers
 
-In your mind, picture an eye looking into a mirror.
+A small, growing anthology of contemplative "pointers" — short text pieces, image
+series, and little interactive instruments, each built to trigger one direct
+recognition. The reader does the operation and hits a wall; the piece doesn't
+explain the conclusion.
 
-Is the eye seeing itself? Or are you picturing the eye from somewhere off to the side — a third position, a little floating camera watching an eye look at a mirror?
+Design brief and voice live in [`docs/`](docs/). Read
+[`docs/VOICE.md`](docs/VOICE.md) before editing any pointer prose.
 
-If so, you cheated. You didn't take up the eye's own point of view; you invented another viewer to watch it.
+## How it's built
 
-So try to drop into the eye itself, looking directly into the glass. Now what is it that sees *that* eye? Look for the one doing the seeing. Every time you find a viewpoint, it turns into one more thing being looked at — by something further back.
+Pure static site — HTML, CSS, vanilla JS. No framework, no backend, no build step.
+The index renders itself from a single manifest, so adding a pointer never touches
+existing pieces.
 
-Keep hunting backward for the one who sees.
+```
+index.html            renders the pointer list from the manifest
+pointers.json         THE REGISTRY — single source of truth
+styles/site.css       shared design tokens, typography, layout shell
+lib/shell.js          loads the manifest; renders text pointers from their .md
+pointers/<id>/        one folder per pointer
+  index.html            the page (uses the shared shell + styles)
+  pointer.md            (text pointers) the prose, editable as plain text
+assets/               shared images, favicon, etc.
+docs/                 build spec, voice guide, sync-field notes (not shipped as pages)
+```
 
-What is it that sees the eye in your mind's eye?
+## Add a pointer
+
+A **text** pointer:
+
+1. `mkdir pointers/my-pointer`
+2. Copy any existing `pointers/*/index.html` into it (the template is identical —
+   it fetches its own `pointer.md`).
+3. Write `pointers/my-pointer/pointer.md` (start with `# Title`).
+4. Add one object to `pointers.json` (`"published": true`, pick an `order`).
+
+Nothing else changes. Use `"published": false` to commit a piece before it's ready;
+`order` gaps (10, 20, 30…) let you slot pieces anywhere without renumbering.
+
+## Preview locally
+
+`fetch()` needs http(s), so open it through a static server, not `file://`:
+
+```
+python3 -m http.server 8000   # then visit http://localhost:8000
+```
+
+## Deploy (Cloudflare Pages)
+
+No build command. Framework preset: **None**. Build output directory: `/` (root).
+Connect the repo and it serves the files as-is — unlimited free bandwidth, so a
+Reddit spike won't cost anything.

@@ -1,0 +1,138 @@
+/* Pointers — shared design tokens, typography, layout shell.
+   Design brief: restraint. The text is the art. Placard, not billboard.
+   One typeface, a couple of weights, enormous space, near-monochrome. */
+
+:root {
+  --paper: #faf9f6;
+  --ink:   #1a1a1a;
+  --muted: #8a857c;
+  --rule:  #e7e3da;
+
+  --measure: 60ch;       /* reading width cap */
+  --serif: "Newsreader", Spectral, "Source Serif 4", Georgia, "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0e0e0e;    /* genuinely dark, not grey */
+    --ink:   #e8e6e2;
+    --muted: #7d7870;
+    --rule:  #232323;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: clamp(1.08rem, 1rem + 0.5vw, 1.3rem);
+  line-height: 1.75;
+  font-weight: 400;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Shell chrome: deliberately quiet --- */
+
+.site-header {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 2rem 1.5rem 0;
+}
+
+.site-header a,
+.site-footer a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.site-header a:hover,
+.site-footer a:hover { color: var(--ink); }
+
+.site-footer {
+  max-width: var(--measure);
+  margin: 6rem auto 3rem;
+  padding: 0 1.5rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 1.5rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* --- The content well: where a pointer floats alone --- */
+
+main.pointer {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: clamp(3rem, 12vh, 9rem) 1.5rem 0;
+}
+
+main.pointer h1 {
+  font-weight: 500;
+  font-size: 1.5rem;
+  line-height: 1.3;
+  margin: 0 0 2.5rem;
+  letter-spacing: 0.01em;
+}
+
+main.pointer p { margin: 0 0 1.5rem; }
+
+main.pointer em { font-style: italic; }
+
+/* An all-caps shouted block (e.g. the gallery) stays as written;
+   no special styling needed — the words carry it. */
+
+/* --- The index: the one place a little curation is allowed --- */
+
+main.index {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: clamp(4rem, 16vh, 11rem) 1.5rem 0;
+}
+
+main.index > h1 {
+  font-weight: 500;
+  font-size: 1.6rem;
+  margin: 0 0 0.4rem;
+}
+
+main.index > .lede {
+  color: var(--muted);
+  margin: 0 0 4rem;
+  font-size: 1rem;
+}
+
+ul.pointer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+ul.pointer-list li { margin: 0 0 2rem; }
+
+ul.pointer-list a {
+  color: var(--ink);
+  text-decoration: none;
+  display: inline-block;
+}
+
+ul.pointer-list a:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+ul.pointer-list .title { font-size: 1.25rem; }
+
+ul.pointer-list .blurb {
+  display: block;
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin-top: 0.15rem;
+}
+
+.empty { color: var(--muted); }

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Rope Climber — Pointers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles/site.css" />
+  <style>
+    /* Image-series: clean vertical sequence, generous gaps, no captions
+       competing with the art. The reveal is carried by the order. */
+    main.series { max-width: 760px; margin: 0 auto; padding: clamp(2rem,8vh,5rem) 1rem 0; }
+    main.series figure { margin: 0 0 clamp(2.5rem, 8vh, 6rem); }
+    main.series img { display: block; width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+  <header class="site-header"><a href="/">Pointers</a></header>
+  <main class="series" id="series"></main>
+  <footer class="site-footer"><a href="/">Back</a></footer>
+  <script>
+    /* Panels in reading order. The ordinary climb comes first;
+       the knot-man and the empty cliff are never the lead image.
+       Drop matching files into ./images/ to light this up. */
+    const panels = [
+      "images/01-climb.png",
+      "images/02-foot.png",
+      "images/03-knot-body.png",
+      "images/04-eye-knot.png",
+      "images/05-empty-cliff.png"
+    ];
+    const main = document.getElementById("series");
+    main.innerHTML = panels
+      .map((src) => `<figure><img src="${src}" alt="" loading="lazy" /></figure>`)
+      .join("");
+  </script>
+</body>
+</html>
