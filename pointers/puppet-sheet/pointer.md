@@ -1,9 +1,9 @@
 # The Puppet and the Sheet
 
-The first time non-duality came to me, it came as a picture: a puppet walking around on a backdrop made of hanging sheets.
+A cloth puppet is walking around on a set made of soft fabric. It stops and looks down, and sees that its feet are part of the fabric.
 
-The puppet looks down and sees that his feet are joined to the sheets. So he starts to unravel. Gently, without any tugging, he untangles back into the cloth he was standing on. As he comes apart, the sheet spreads out and goes smooth, the wrinkles his body was holding in it letting go.
+It starts to unravel, back into the set it was standing on. As it comes undone, the fabric it had been bunching pulls flat.
 
-He sinks back until there is just a head. Then just an eye, watching the world. Then the eye untangles too.
+The puppet sinks down to just a head, then just an eye, then the eye unravels too.
 
-And there is just a flat sheet of experience.
+And there is just a flat sheet.
