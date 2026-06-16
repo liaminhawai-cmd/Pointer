@@ -16,7 +16,7 @@ function startSyncField(canvas,onDone){
   const ctx=canvas.getContext('2d',{alpha:false});
   const cfg={
     NX:60, NY:84, PULSE:0.33, DRIVE0:3.0, DECAY:0.973, BLOB:0.55, RADIUS:1.5,
-    RIPPLE:1.05, FB:5.0, CROSS:0.32, GUTDELAY:30000, JITTER:0.5, STIR:3.3, GUTCHURN:0.05, LEAK:0.06,
+    RIPPLE:1.05, FB:5.0, CROSS:0.32, GUTDELAY:30000, JITTER:0.5, STIR:3.3, GUTCHURN:0.05, LEAK:0.15,
     GRASP:0.5, GUTHEART:0.012, GHCLICK:4.0,
     COUPLE:{body:0.055, world:0.045},
     ENT:{body:0.004, heart:0.002, gut:0.092, gutjoin:0.004},
@@ -126,7 +126,7 @@ function startSyncField(canvas,onDone){
       apull/=(an||1);
       const ak=cfg.COUPLE.world*headActG; const aleak=bn>0?cfg.LEAK*heartActG*(bpull/bn):0;
       const agp=cfg.ENT.gut*gutA*Math.sin(gutPhaseG-ap);
-      const an2=headActG>0.02?(Math.random()-.5)*nAmp*cfg.NOISE.world*headActG:0;
+      const an2=headActG>0.02?(Math.random()-.5)*0.7*cfg.NOISE.world*headActG*(1-0.85*heartActG):0;
       airN[i]=ap+(fb0*0.85*(1+ajit[i]*cfg.JITTER)+ak*apull+aleak+agp+an2)*sc;
       // BODY: fiber-coupled within limbs
       if(limb[i]!==9){
@@ -169,7 +169,7 @@ function startSyncField(canvas,onDone){
     for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
       const i=idx(x,y); if(limb[i]===9||mask[i]<.06) continue;
       const aligned=(Math.cos(phase[i])+1)*.5;
-      let bright=Math.pow(aligned,1.6)*(.12+mask[i]*.88)+ink[i]*.8; const vis=(bwGut[i]>0.35)?clamp(0.5*headActG+0.6*gutActG):(0.42+0.58*headActG); bright=clamp(bright*gmul*vis);
+      let bright=Math.pow(aligned,1.6)*(.12+mask[i]*.88)+ink[i]*.8; const vis=(bwGut[i]>0.35)?clamp(0.14+0.4*headActG+0.6*gutActG):(0.42+0.58*headActG); bright=clamp(bright*gmul*vis);
       if(bright<.02)continue;
       const g=Math.floor(8+bright*247), rad=cell*(0.55+overall*cfg.BLOB)*(.45+bright*.7);
       ctx.globalAlpha=Math.min(1,(.12+bright*.8)/(1+overall*1.2));
