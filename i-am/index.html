@@ -17,6 +17,7 @@ function startSyncField(canvas,onDone){
   const cfg={
     NX:60, NY:84, PULSE:0.33, DRIVE0:3.0, DECAY:0.973, BLOB:0.55, RADIUS:1.5,
     RIPPLE:1.05, FB:5.0, CROSS:0.32, GUTDELAY:30000, JITTER:0.5, STIR:3.3, GUTCHURN:0.05, LEAK:0.06,
+    GRASP:0.5, GUTHEART:0.012, GHCLICK:4.0,
     COUPLE:{body:0.055, world:0.045},
     ENT:{body:0.004, heart:0.002, gut:0.092, gutjoin:0.004},
     KNOCK:{gut:0.15, head:0.35},
@@ -33,7 +34,7 @@ function startSyncField(canvas,onDone){
   const limb=new Uint8Array(N);   // 0 head 1 spine 2 Larm 3 Rarm 4 legs ; body if mask>=.10
   let w=0,h=0,dpr=1,raf=null,lastT=performance.now(),lastInput=-1e9,chaos=cfg.DRIVE0,target=0;
   let headSync=0,heartSync=0,gutSync=0,armsSync=0,airSync=0;
-  let headActG=0,heartActG=0,gutActG=0,heartPhaseG=0,gutPhaseG=0,gutHold=0,blinkT=-1,cursorGone=false;
+  let headActG=0,heartActG=0,gutActG=0,heartPhaseG=0,gutPhaseG=0,gutHold=0,blinkT=-1,cursorGone=false,clickBoost=0;
   const idx=(x,y)=>y*NX+x, BTHR=0.10;
   function init(){
     for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
@@ -56,7 +57,7 @@ function startSyncField(canvas,onDone){
       const t=clamp((v+0.81)/1.35); ty[i]=t;
       if(limb[i]===0||limb[i]===1){
         bwHead[i]=Math.exp(-Math.pow((t-0.10)/0.12,2));
-        bwHeart[i]=Math.exp(-Math.pow((t-0.38)/0.13,2));
+        bwHeart[i]=Math.exp(-Math.pow((t-0.42)/0.10,2));
         bwGut[i]=Math.exp(-Math.pow((t-0.56)/0.12,2));
       } else { bwHead[i]=bwHeart[i]=bwGut[i]=0; }
       phase[i]=Math.random()*TWO; next[i]=phase[i]; air[i]=Math.random()*TWO; airN[i]=air[i];
@@ -87,16 +88,17 @@ function startSyncField(canvas,onDone){
         if(resp>0){ let d=target-phase[i]; d=Math.atan2(Math.sin(d),Math.cos(d)); phase[i]+=d*Math.min(0.45,fb*resp*strength); ink[i]=Math.min(1,ink[i]+fb*resp*.7); }
       }}
     }
+    const grasp=Math.min(headSync,heartSync);
     for(let i=0;i<N;i++){ if(limb[i]===9)continue;
       if(cfg.KNOCK.gut>0) phase[i]+=(Math.random()-.5)*cfg.KNOCK.gut*bwGut[i];
-      if(tyClick>0.26 && cfg.KNOCK.head>0) phase[i]+=(Math.random()-.5)*cfg.KNOCK.head*bwHead[i];
+      if(grasp>0.35) phase[i]+=(Math.random()-.5)*cfg.GRASP*grasp*(bwHead[i]+bwHeart[i]);
     }
-    gutHold=0;
+    clickBoost=1; gutHold=0;
     if(cursorGone){canvas.classList.remove('gone-cursor');cursorGone=false;}
   }
   function step(dt){
     const sc=dt/16.67, fb0=TWO*cfg.PULSE/60;
-    chaos*=Math.pow(cfg.DECAY,sc);
+    chaos*=Math.pow(cfg.DECAY,sc); clickBoost*=Math.pow(0.4,dt/700);
     target+=TWO*cfg.PULSE*(dt/1000);
     let hC=0,hS=0,hW=0,rC=0,rS=0,rW=0,gC=0,gS=0,gW=0,aC=0,aS=0,aW=0,wC=0,wS=0;
     for(let i=0;i<N;i++){
@@ -123,7 +125,7 @@ function startSyncField(canvas,onDone){
       if(y>0){apull+=Math.sin(air[i-NX]-ap);an++; if(limb[i-NX]!==9){bpull+=Math.sin(phase[i-NX]-ap);bn++;}} if(y<NY-1){apull+=Math.sin(air[i+NX]-ap);an++; if(limb[i+NX]!==9){bpull+=Math.sin(phase[i+NX]-ap);bn++;}}
       apull/=(an||1);
       const ak=cfg.COUPLE.world*headActG; const aleak=bn>0?cfg.LEAK*heartActG*(bpull/bn):0;
-      const agp=cfg.ENT.heart*heartActG*Math.sin(heartPhaseG-ap)+cfg.ENT.gut*gutA*Math.sin(gutPhaseG-ap);
+      const agp=cfg.ENT.gut*gutA*Math.sin(gutPhaseG-ap);
       const an2=headActG>0.02?(Math.random()-.5)*nAmp*cfg.NOISE.world*headActG:0;
       airN[i]=ap+(fb0*0.85*(1+ajit[i]*cfg.JITTER)+ak*apull+aleak+agp+an2)*sc;
       // BODY: fiber-coupled within limbs
@@ -137,7 +139,7 @@ function startSyncField(canvas,onDone){
         if(y<NY-1&&limb[i+NX]!==9){const g=mask[i+NX]*av*(limb[i+NX]!==li?cfg.CROSS:1);pull+=Math.sin(phase[i+NX]-p)*g;wsum+=g;}
         pull=wsum>0?pull/wsum:0;
         let gp=cfg.ENT.body*Math.sin(target-p);
-        if(bg_gate(i)&&gutEnabled) gp+=cfg.ENT.gutjoin*Math.sin(heartPhaseG-p);
+        if(bwHeart[i]>0.35){ const gh=cfg.GUTHEART*(1+cfg.GHCLICK*clickBoost); gp+=gh*Math.sin(gutPhaseG-p); }
         let ns=(Math.random()-.5)*nAmp*cfg.NOISE.body;
         if(bwGut[i]>0.35 && !gutEnabled){ pull=0; gp=0; ns=(Math.random()-.5)*cfg.GUTCHURN; }
         next[i]=p+(fb0*(1+0.05*(0.5-ty[i])+bjit[i]*cfg.JITTER)+cfg.COUPLE.body*pull+gp+ns)*sc;
@@ -196,7 +198,7 @@ function buildSyncPanel(api){
   const specs=[
     ['PULSE','pulse/sec',0.05,1.0,0.01],['DRIVE0','start noise',0,4,0.05],['DECAY','noise decay',0.93,1,0.001],
     ['BLOB','fuzz max',0,3,0.05],['RADIUS','click size',1,6,0.5],['RIPPLE','ripple',0,3,0.05],
-    ['FB','fiber bias',0,5,0.1],['CROSS','cross-limb',0,1,0.02],['GUTDELAY','gut delay ms',0,60000,1000],['JITTER','freq spread',0,0.5,0.01],['STIR','effort noise',0,4,0.1],['GUTCHURN','gut churn',0,0.2,0.005],
+    ['FB','fiber bias',0,5,0.1],['CROSS','cross-limb',0,1,0.02],['GUTDELAY','gut delay ms',0,60000,1000],['JITTER','freq spread',0,1.5,0.01],['STIR','effort noise',0,8,0.1],['GUTCHURN','gut churn',0,0.2,0.005],['GRASP','grasp breaks',0,2,0.05],['GUTHEART','gut to heart',0,0.1,0.002],['GHCLICK','click boost',0,10,0.5],
     ['COUPLE.body','cple body',0,0.4,0.005],['COUPLE.world','cple air',0,0.4,0.005],
     ['ENT.body','ent beat',0,0.1,0.002],['ENT.heart','ent air-heart',0,0.1,0.002],
     ['ENT.gut','ent air-gut',0,0.2,0.002],['ENT.gutjoin','ent gut-join',0,0.1,0.002],['LEAK','body to air',0,0.3,0.005],
