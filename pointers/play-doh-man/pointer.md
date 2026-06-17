@@ -1,15 +1,11 @@
 # The Play-Doh Man
 
-Imagine your body is made of Play-Doh, or some modular thing that can be taken apart without any pain or violence. Now start chopping bits off, and notice whether the mind labels any one part as *me*.
+You are a Play-Doh person. You can chop bits off and put them back on, no pain, no violence.
 
-Chop off your limbs. Usually it feels like *you* are now a limbless body, and the limbs are separate from you.
+Chop your legs off. They go left, your torso goes right. Which side are you on?
 
-Chop off the torso. Now it feels like you're just a head.
+You're the torso? Chop the arms off, then the torso. Are you the head?
 
-Chop the head in half. Which side is you? Take the side that felt like you, and chop that in half. Which part is you now?
+Cut the head in half. The left half, or the right?
 
-Keep going. Chop away everything else, and then try to chop the self.
-
-In a divided state, the mind will keep trying to label one piece *me* and the rest *not me*. But in a non-dual state the whole thing gets funny — because if you chop a Play-Doh man in half, there's still just a whole Play-Doh man. A half with legs, and a half with arms and a head. Cut it the other way and there's a left side and a right side.
-
-There's still exactly the same amount of Play-Doh.
+Keep cutting what's left, and try to cut off the self. But chop a Play-Doh man in half and there's still a whole Play-Doh man. A half with legs, and a half with a head. There's just as much Play-Doh as before.
