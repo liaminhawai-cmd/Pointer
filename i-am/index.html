@@ -64,7 +64,7 @@ function startSyncField(canvas,onDone){
       bjit[i]=(Math.random()-.5); ajit[i]=(Math.random()-.5);
     }
   }
-  function reset(){ init(); chaos=cfg.DRIVE0; target=0; gutHold=0; blinkT=-1; lastInput=-1e9;
+  function reset(){ init(); chaos=cfg.DRIVE0; target=0; gutHold=0; blinkT=-1; lastInput=performance.now();
     for(let i=0;i<N;i++)ink[i]=0; headActG=heartActG=gutActG=0;
     if(cursorGone){canvas.classList.remove('gone-cursor');cursorGone=false;} }
   function resize(){const r=canvas.getBoundingClientRect();dpr=Math.max(1,Math.min(2,devicePixelRatio||1));
@@ -186,7 +186,7 @@ function startSyncField(canvas,onDone){
     ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
   }
   function tick(t){const dt=Math.min(48,t-lastT);lastT=t;step(dt);draw();raf=requestAnimationFrame(tick);}
-  init(); resize();
+  init(); lastInput=performance.now(); resize();
   const onResize=()=>resize(),
         onDown=e=>trace(e.clientX,e.clientY,e.pressure||1),
         onMove=e=>{if(e.buttons||e.pointerType==='touch')trace(e.clientX,e.clientY,.6)};
