@@ -15,15 +15,15 @@ function renderSync(){if(syncStop){syncStop();syncStop=null;} const op=document.
 function startSyncField(canvas,onDone){
   const ctx=canvas.getContext('2d',{alpha:false});
   const cfg={
-    NX:60, NY:84, PULSE:0.33, DRIVE0:3.0, DECAY:0.973, BLOB:0.55, RADIUS:1.0,
-    RIPPLE:1.85, FB:3.4, CROSS:0.2, GUTDELAY:90000, JITTER:0.38, STIR:3.3, GUTCHURN:0.05, LEAK:0.22,
-    GRASP:0.5, GUTHEART:0.034, GHCLICK:2.0, STIRTAU:1500, HEADCALM:0.4, GRAD:0.05,
+    NX:60, NY:84, PULSE:0.33, DRIVE0:3.0, DECAY:0.973, BLOB:0.55, RADIUS:1.5,
+    RIPPLE:1.85, FB:3.1, CROSS:0.2, GUTDELAY:114000, JITTER:0.4, STIR:3.3, GUTCHURN:0.06, LEAK:0.245,
+    GRASP:0.5, GUTHEART:0.034, GHCLICK:2.0, STIRTAU:1500, HEADCALM:0.6, GRAD:0.018,
     COUPLE:{body:0.055, world:0.07},
-    ENT:{body:0.001, heart:0.02, gut:0.032, gutjoin:0.004},
+    ENT:{body:0.002, heart:0.024, gut:0.06, gutjoin:0.037},
     KNOCK:{gut:0.15, head:0.35},
     RESP:{head:2.0, gut:0.045, arms:0.2},
     NOISE:{body:0.07, world:0.12},
-    WAKE:{head:0.85, heart:0.97, gut:0.815}
+    WAKE:{head:0.86, heart:0.81, gut:0.815}
   };
   const NX=cfg.NX, NY=cfg.NY, N=NX*NY, TWO=Math.PI*2, clamp=v=>Math.max(0,Math.min(1,v));
   const smooth=(x,t)=>{const a=(x-(t-0.10))/0.20; return a<0?0:a>1?1:a*a*(3-2*a);};
@@ -207,7 +207,7 @@ function buildSyncPanel(api){
   const specs=[
     ['PULSE','pulse/sec',0.05,1.0,0.01],['DRIVE0','start noise',0,4,0.05],['DECAY','noise decay',0.93,1,0.001],
     ['BLOB','fuzz max',0,3,0.05],['RADIUS','click size',1,6,0.5],['RIPPLE','ripple',0,3,0.05],
-    ['FB','fiber bias',0,5,0.1],['CROSS','cross-limb',0,1,0.02],['GUTDELAY','gut delay ms',0,180000,1000],['JITTER','freq spread',0,1.5,0.01],['STIR','effort noise',0,8,0.1],['STIRTAU','noise decay ms',200,6000,100],['HEADCALM','head calm',0,1,0.05],['GRAD','wave tilt',0,0.2,0.005],['GUTCHURN','gut churn',0,0.2,0.005],['GRASP','grasp breaks',0,2,0.05],['GUTHEART','gut to heart',0,0.1,0.002],['GHCLICK','click boost',0,10,0.5],
+    ['FB','fiber bias',0,5,0.1],['CROSS','cross-limb',0,1,0.02],['GUTDELAY','gut delay ms',0,180000,1000],['JITTER','freq spread',0,1.5,0.01],['STIR','effort noise',0,8,0.1],['STIRTAU','noise decay ms',200,6000,100],['HEADCALM','head calm',0,1,0.05],['GRAD','wave tilt',0,0.06,0.002],['GUTCHURN','gut churn',0,0.2,0.005],['GRASP','grasp breaks',0,2,0.05],['GUTHEART','gut to heart',0,0.1,0.002],['GHCLICK','click boost',0,10,0.5],
     ['COUPLE.body','cple body',0,0.4,0.005],['COUPLE.world','cple air',0,0.4,0.005],
     ['ENT.body','ent beat',0,0.1,0.002],['ENT.heart','ent air-heart',0,0.1,0.002],
     ['ENT.gut','ent air-gut',0,0.08,0.001],['ENT.gutjoin','ent gut-join',0,0.05,0.001],['LEAK','body to air',0,0.3,0.005],
