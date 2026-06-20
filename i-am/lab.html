@@ -1,16 +1,12 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sync Lab</title>
-<style>html,body{margin:0;height:100%;background:#000}#c{display:block;width:100vw;height:100vh;background:#000;touch-action:none;cursor:crosshair}#c.gone-cursor{cursor:none}</style>
-</head><body><canvas id="c"></canvas><script>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sync Lab</title><style>html,body{margin:0;height:100%;background:#000}#c{display:block;width:100vw;height:100vh;background:#000;touch-action:none;cursor:crosshair}#c.gone-cursor{cursor:none}</style></head><body><canvas id="c"></canvas><script>
 function startSyncField(canvas,onDone){
   const ctx=canvas.getContext('2d',{alpha:false});
   const cfg={
     NX:60, NY:84, PULSE:0.33, DRIVE0:3.0, DECAY:0.973, BLOB:0.55, RADIUS:1.0,
     RIPPLE:1.85, FB:3.4, CROSS:0.2, GUTDELAY:90000, JITTER:0.38, STIR:3.3, GUTCHURN:0.05, LEAK:0.22,
-    GRASP:0.5, GUTHEART:0.034, GHCLICK:2.0, STIRTAU:1500, HEADCALM:0.4,
+    GRASP:0.5, GUTHEART:0.034, GHCLICK:2.0, STIRTAU:1500, HEADCALM:0.4, GRAD:0.05,
     COUPLE:{body:0.055, world:0.07},
-    ENT:{body:0.004, heart:0.02, gut:0.032, gutjoin:0.004},
+    ENT:{body:0.001, heart:0.02, gut:0.032, gutjoin:0.004},
     KNOCK:{gut:0.15, head:0.35},
     RESP:{head:2.0, gut:0.045, arms:0.2},
     NOISE:{body:0.07, world:0.12},
@@ -133,7 +129,7 @@ function startSyncField(canvas,onDone){
         if(bwHeart[i]>0.35){ const gh=cfg.GUTHEART*(1+cfg.GHCLICK*clickBoost); gp+=gh*Math.sin(gutPhaseG-p); }
         let ns=(Math.random()-.5)*nAmp*cfg.NOISE.body*(1-cfg.HEADCALM*bwHead[i]);
         if(bwGut[i]>0.35 && !gutEnabled){ pull=0; gp=0; ns=(Math.random()-.5)*cfg.GUTCHURN; }
-        next[i]=p+(fb0*(1+0.05*(0.5-ty[i])+bjit[i]*cfg.JITTER)+cfg.COUPLE.body*pull+gp+ns)*sc;
+        next[i]=p+(fb0*(1+0.05*(0.5-ty[i])+bjit[i]*cfg.JITTER)+cfg.GRAD*(x/(NX-1)*2-1)+cfg.COUPLE.body*pull+gp+ns)*sc;
         ink[i]*=Math.pow(.94,sc);
       }
     }
@@ -198,7 +194,7 @@ function buildSyncPanel(api){
   const specs=[
     ['PULSE','pulse/sec',0.05,1.0,0.01],['DRIVE0','start noise',0,4,0.05],['DECAY','noise decay',0.93,1,0.001],
     ['BLOB','fuzz max',0,3,0.05],['RADIUS','click size',1,6,0.5],['RIPPLE','ripple',0,3,0.05],
-    ['FB','fiber bias',0,5,0.1],['CROSS','cross-limb',0,1,0.02],['GUTDELAY','gut delay ms',0,180000,1000],['JITTER','freq spread',0,1.5,0.01],['STIR','effort noise',0,8,0.1],['STIRTAU','noise decay ms',200,6000,100],['HEADCALM','head calm',0,1,0.05],['GUTCHURN','gut churn',0,0.2,0.005],['GRASP','grasp breaks',0,2,0.05],['GUTHEART','gut to heart',0,0.1,0.002],['GHCLICK','click boost',0,10,0.5],
+    ['FB','fiber bias',0,5,0.1],['CROSS','cross-limb',0,1,0.02],['GUTDELAY','gut delay ms',0,180000,1000],['JITTER','freq spread',0,1.5,0.01],['STIR','effort noise',0,8,0.1],['STIRTAU','noise decay ms',200,6000,100],['HEADCALM','head calm',0,1,0.05],['GRAD','wave tilt',0,0.2,0.005],['GUTCHURN','gut churn',0,0.2,0.005],['GRASP','grasp breaks',0,2,0.05],['GUTHEART','gut to heart',0,0.1,0.002],['GHCLICK','click boost',0,10,0.5],
     ['COUPLE.body','cple body',0,0.4,0.005],['COUPLE.world','cple air',0,0.4,0.005],
     ['ENT.body','ent beat',0,0.1,0.002],['ENT.heart','ent air-heart',0,0.1,0.002],
     ['ENT.gut','ent air-gut',0,0.08,0.001],['ENT.gutjoin','ent gut-join',0,0.05,0.001],['LEAK','body to air',0,0.3,0.005],
@@ -229,8 +225,5 @@ function buildSyncPanel(api){
 }
 
 
-const canvas=document.getElementById('c');
-let api;
-function boot(){ api=startSyncField(canvas, function(){ setTimeout(function(){ api && api.reset && api.reset(); }, 1600); }); buildSyncPanel(api); }
-boot();
+const canvas=document.getElementById("c");let api;function boot(){api=startSyncField(canvas,function(){setTimeout(function(){api&&api.reset&&api.reset();},1600);});buildSyncPanel(api);}boot();
 </script></body></html>
