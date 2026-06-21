@@ -1,16 +1,16 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sync Lab</title><style>html,body{margin:0;height:100%;background:#000}#c{display:block;width:100vw;height:100vh;background:#000;touch-action:none;cursor:crosshair}#c.gone-cursor{cursor:none}</style></head><body><canvas id="c"></canvas><script>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sync Lab (dantien) — v5 blink unison</title><style>html,body{margin:0;height:100%;background:#000}#c{display:block;width:100vw;height:100vh;background:#000;touch-action:none;cursor:crosshair}#c.gone-cursor{cursor:none}</style></head><body><canvas id="c"></canvas><script>
 function startSyncField(canvas,onDone){
   const ctx=canvas.getContext('2d',{alpha:false});
   const cfg={
-    NX:60, NY:84, PULSE:0.33, DRIVE0:3.0, DECAY:0.973, BLOB:0.55, RADIUS:1.5,
-    RIPPLE:1.85, FB:3.1, CROSS:0.2, GUTDELAY:114000, JITTER:0.4, STIR:3.3, GUTCHURN:0.06, LEAK:0.245,
-    GRASP:0.5, GUTHEART:0.034, GHCLICK:2.0, STIRTAU:1500, HEADCALM:0.6, GRAD:0.018,
-    COUPLE:{body:0.055, world:0.07},
-    ENT:{body:0.002, heart:0.024, gut:0.06, gutjoin:0.037},
-    KNOCK:{gut:0.15, head:0.35},
-    RESP:{head:2.0, gut:0.045, arms:0.2},
-    NOISE:{body:0.07, world:0.12},
-    WAKE:{head:0.86, heart:0.81, gut:0.815}
+    NX:60, NY:84, PULSE:0.33, DRIVE0:3.45, DECAY:0.988, BLOB:0.55, RADIUS:2.0,
+    RIPPLE:1.05, FB:2.8, CROSS:0.32, GUTDELAY:44000, JITTER:0.43, STIR:3.3, GUTCHURN:0.085, LEAK:0.155,
+    GRASP:0.5, GUTHEART:0.024, GHCLICK:4.0, EFLOOR:0.02, ECURVE:1.4, EFLAT:45000, TRANSAMP:0.58, TRANSTAU:19500, HEADISO:0.7, BLINKTHRESH:0.8,
+    COUPLE:{body:0.055, world:0.03},
+    ENT:{body:0.004, heart:0.046, gut:0.094, gutjoin:0.024},
+    KNOCK:{gut:1.5, head:0.3},
+    RESP:{head:2.0, gut:0.12, arms:0.42},
+    NOISE:{body:0.11, world:0.12},
+    WAKE:{head:0.87, heart:0.97, gut:0.82}
   };
   const NX=cfg.NX, NY=cfg.NY, N=NX*NY, TWO=Math.PI*2, clamp=v=>Math.max(0,Math.min(1,v));
   const smooth=(x,t)=>{const a=(x-(t-0.10))/0.20; return a<0?0:a>1?1:a*a*(3-2*a);};
@@ -18,10 +18,10 @@ function startSyncField(canvas,onDone){
         mask=new Float32Array(N), ink=new Float32Array(N), ty=new Float32Array(N),
         fx=new Float32Array(N), fy=new Float32Array(N), bjit=new Float32Array(N), ajit=new Float32Array(N),
         bwHead=new Float32Array(N), bwHeart=new Float32Array(N), bwGut=new Float32Array(N);
-  const limb=new Uint8Array(N);   // 0 head 1 spine 2 Larm 3 Rarm 4 legs ; body if mask>=.10
+  const limb=new Uint8Array(N);
   let w=0,h=0,dpr=1,raf=null,lastT=performance.now(),lastInput=-1e9,chaos=cfg.DRIVE0,target=0;
   let headSync=0,heartSync=0,gutSync=0,armsSync=0,airSync=0;
-  let headActG=0,heartActG=0,gutActG=0,heartPhaseG=0,gutPhaseG=0,gutHold=0,blinkT=-1,cursorGone=false,clickBoost=0;
+  let headActG=0,heartActG=0,gutActG=0,heartPhaseG=0,gutPhaseG=0,gutHold=0,blinkT=-1,cursorGone=false,clickBoost=0,headWokeAt=-1e9,lastHeadAct=0;
   const idx=(x,y)=>y*NX+x, BTHR=0.10;
   function init(){
     for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
@@ -29,201 +29,79 @@ function startSyncField(canvas,onDone){
       let best=0,bl=9,bfx=0,bfy=1;
       const E=(cx,cy,rx,ry,L,Fx,Fy)=>{const d=Math.hypot((u-cx)/rx,(v-cy)/ry),cov=clamp((1.0-d)/0.25); if(cov>best){best=cov;bl=L;bfx=Fx;bfy=Fy;}};
       const C=(ax,ay,bx,by,r,L)=>{const dx=bx-ax,dy=by-ay,L2=dx*dx+dy*dy; let t=L2>0?((u-ax)*dx+(v-ay)*dy)/L2:0; t=t<0?0:t>1?1:t; const qx=ax+t*dx,qy=ay+t*dy,dist=Math.hypot(u-qx,v-qy),cov=clamp((r-dist)/(r*0.6)); if(cov>best){best=cov;bl=L;const n=Math.hypot(dx,dy)||1;bfx=dx/n;bfy=dy/n;}};
-      E(0,-.66,.14,.15,0,0,1);            // head
-      E(0,-.49,.06,.06,1,0,1);            // neck
-      E(0,-.28,.21,.16,1,0,1);            // chest
-      E(0,-.04,.23,.17,1,0,1);            // belly
-      E(0,.16,.24,.12,4,1,0);             // hips
-      C(0,.16,-.60,.34,.12,4);            // left thigh
-      C(0,.16,.60,.34,.12,4);             // right thigh
-      C(-.60,.34,-.05,.50,.11,4);         // left shin (crosses)
-      C(.60,.34,.05,.50,.11,4);           // right shin
-      C(-.22,-.36,-.50,.28,.08,2);        // left arm
-      C(.22,-.36,.50,.28,.08,3);          // right arm
+      E(0,-.66,.14,.15,0,0,1); E(0,-.49,.06,.06,1,0,1); E(0,-.28,.21,.16,1,0,1); E(0,-.04,.23,.17,1,0,1); E(0,.16,.24,.12,4,1,0);
+      C(0,.16,-.60,.34,.12,4); C(0,.16,.60,.34,.12,4); C(-.60,.34,-.05,.50,.11,4); C(.60,.34,.05,.50,.11,4); C(-.22,-.36,-.50,.28,.08,2); C(.22,-.36,.50,.28,.08,3);
       mask[i]=Math.pow(best,.85); limb[i]=best<BTHR?9:bl; fx[i]=bfx; fy[i]=bfy;
       const t=clamp((v+0.81)/1.35); ty[i]=t;
-      if(limb[i]===0||limb[i]===1){
-        bwHead[i]=Math.exp(-Math.pow((t-0.10)/0.12,2));
-        bwHeart[i]=Math.exp(-Math.pow((t-0.42)/0.10,2));
-        bwGut[i]=Math.exp(-Math.pow((t-0.56)/0.12,2));
-      } else { bwHead[i]=bwHeart[i]=bwGut[i]=0; }
-      phase[i]=Math.random()*TWO; next[i]=phase[i]; air[i]=Math.random()*TWO; airN[i]=air[i];
-      bjit[i]=(Math.random()-.5); ajit[i]=(Math.random()-.5);
+      if(limb[i]===0||limb[i]===1){ bwHead[i]=Math.exp(-Math.pow((t-0.10)/0.12,2)); bwHeart[i]=Math.exp(-Math.pow((t-0.42)/0.10,2)); bwGut[i]=Math.exp(-Math.pow((t-0.56)/0.12,2)); }
+      else { bwHead[i]=bwHeart[i]=bwGut[i]=0; }
+      phase[i]=Math.random()*TWO; next[i]=phase[i]; air[i]=Math.random()*TWO; airN[i]=air[i]; bjit[i]=(Math.random()-.5); ajit[i]=(Math.random()-.5);
     }
   }
-  function reset(){ init(); chaos=cfg.DRIVE0; target=0; gutHold=0; blinkT=-1; lastInput=performance.now();
-    for(let i=0;i<N;i++)ink[i]=0; headActG=heartActG=gutActG=0;
-    if(cursorGone){canvas.classList.remove('gone-cursor');cursorGone=false;} }
-  function resize(){const r=canvas.getBoundingClientRect();dpr=Math.max(1,Math.min(2,devicePixelRatio||1));
-    w=Math.max(280,Math.floor(r.width));h=Math.max(280,Math.floor(r.height));
-    canvas.width=Math.floor(w*dpr);canvas.height=Math.floor(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);}
-  function respAxis(t){ return cfg.RESP.gut+(cfg.RESP.head-cfg.RESP.gut)*Math.pow(1-t,1.8); }
+  function reset(){ init(); chaos=cfg.DRIVE0; target=0; gutHold=0; blinkT=-1; lastInput=performance.now(); for(let i=0;i<N;i++)ink[i]=0; headActG=heartActG=gutActG=0; headWokeAt=-1e9; lastHeadAct=0; if(cursorGone){canvas.classList.remove('gone-cursor');cursorGone=false;} }
+  function resize(){const r=canvas.getBoundingClientRect();dpr=Math.max(1,Math.min(2,devicePixelRatio||1)); w=Math.max(280,Math.floor(r.width));h=Math.max(280,Math.floor(r.height)); canvas.width=Math.floor(w*dpr);canvas.height=Math.floor(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);}
+  function entOf(t,fl){ const e0=cfg.EFLOOR+(1-cfg.EFLOOR)*Math.pow(1-t,cfg.ECURVE); return e0+(1-e0)*fl; }
   function trace(cx,cy,strength){
-    const r=canvas.getBoundingClientRect(), px=(cx-r.left)/r.width, py=(cy-r.top)/r.height;
-    if(px<0||px>1||py<0||py>1)return;
-    const gx=px*(NX-1), gy=py*(NY-1); lastInput=performance.now();
-    const ci=idx(Math.max(0,Math.min(NX-1,Math.round(gx))),Math.max(0,Math.min(NY-1,Math.round(gy)))), tyClick=ty[ci];
-    const Rb=Math.max(1,Math.round(cfg.RADIUS)), Rr=Rb+3, sig=Math.max(.55,cfg.RADIUS*0.6), sigR=Rr*0.5;
-    for(let yy=Math.max(0,Math.floor(gy-Rr));yy<=Math.min(NY-1,Math.ceil(gy+Rr));yy++)
-    for(let xx=Math.max(0,Math.floor(gx-Rr));xx<=Math.min(NX-1,Math.ceil(gx+Rr));xx++){
-      const i=idx(xx,yy), dx=xx-gx, dy=yy-gy, d2=dx*dx+dy*dy;
-      const fr=Math.exp(-d2/(2*sigR*sigR)); if(fr>0.03) air[i]+=cfg.RIPPLE*fr;     // stir a ripple in the pond
-      if(mask[i]>=BTHR){ const fb=Math.exp(-d2/(2*sig*sig)); if(fb>0.05){
-        let resp=0;
-        if(limb[i]===2||limb[i]===3) resp=cfg.RESP.arms*headActG;
-        else resp=respAxis(ty[i])*(ty[i]>0.22?headActG:1);
-        if(resp>0){ let d=target-phase[i]; d=Math.atan2(Math.sin(d),Math.cos(d)); phase[i]+=d*Math.min(0.45,fb*resp*strength); ink[i]=Math.min(1,ink[i]+fb*resp*.7); }
-      }}
+    const r=canvas.getBoundingClientRect(), px=(cx-r.left)/r.width, py=(cy-r.top)/r.height; if(px<0||px>1||py<0||py>1)return;
+    const gx=px*(NX-1), gy=py*(NY-1); lastInput=performance.now(); const Rb=Math.max(1,Math.round(cfg.RADIUS)), Rr=Rb+3, sig=Math.max(.55,cfg.RADIUS*0.6), sigR=Rr*0.5;
+    for(let yy=Math.max(0,Math.floor(gy-Rr));yy<=Math.min(NY-1,Math.ceil(gy+Rr));yy++) for(let xx=Math.max(0,Math.floor(gx-Rr));xx<=Math.min(NX-1,Math.ceil(gx+Rr));xx++){
+      const i=idx(xx,yy), dx=xx-gx, dy=yy-gy, d2=dx*dx+dy*dy; const fr=Math.exp(-d2/(2*sigR*sigR)); if(fr>0.03) air[i]+=cfg.RIPPLE*fr;
+      if(mask[i]>=BTHR){ const fb=Math.exp(-d2/(2*sig*sig)); if(fb>0.05){ let resp=0; if(limb[i]===2||limb[i]===3) resp=cfg.RESP.arms*headActG*entOf(ty[i],0); else resp=cfg.RESP.head*entOf(ty[i],0)*(ty[i]>0.22?headActG:1); if(resp>0){ let d=target-phase[i]; d=Math.atan2(Math.sin(d),Math.cos(d)); phase[i]+=d*Math.min(0.45,fb*resp*strength); ink[i]=Math.min(1,ink[i]+fb*resp*.7); }}}
     }
-    const grasp=Math.min(headSync,heartSync);
-    for(let i=0;i<N;i++){ if(limb[i]===9)continue;
-      if(cfg.KNOCK.gut>0) phase[i]+=(Math.random()-.5)*cfg.KNOCK.gut*bwGut[i];
-      if(grasp>0.35) phase[i]+=(Math.random()-.5)*cfg.GRASP*grasp*(bwHead[i]+bwHeart[i]);
-    }
-    clickBoost=1; gutHold=0;
-    if(cursorGone){canvas.classList.remove('gone-cursor');cursorGone=false;}
+    const grasp=Math.min(headSync,heartSync); for(let i=0;i<N;i++){ if(limb[i]===9)continue; if(cfg.KNOCK.gut>0) phase[i]+=(Math.random()-.5)*cfg.KNOCK.gut*bwGut[i]; if(grasp>0.35) phase[i]+=(Math.random()-.5)*cfg.GRASP*grasp*(bwHead[i]+bwHeart[i]); }
+    clickBoost=1; gutHold=0; if(cursorGone){canvas.classList.remove('gone-cursor');cursorGone=false;}
   }
   function step(dt){
-    const sc=dt/16.67, fb0=TWO*cfg.PULSE/60;
-    chaos*=Math.pow(cfg.DECAY,sc); clickBoost*=Math.pow(0.4,dt/700);
-    target+=TWO*cfg.PULSE*(dt/1000);
+    const sc=dt/16.67, fb0=TWO*cfg.PULSE/60; chaos*=Math.pow(cfg.DECAY,sc); clickBoost*=Math.pow(0.4,dt/700); target+=TWO*cfg.PULSE*(dt/1000);
     let hC=0,hS=0,hW=0,rC=0,rS=0,rW=0,gC=0,gS=0,gW=0,aC=0,aS=0,aW=0,wC=0,wS=0;
-    for(let i=0;i<N;i++){
-      const ca=Math.cos(air[i]),sa=Math.sin(air[i]); wC+=ca; wS+=sa;
-      if(limb[i]===9)continue;
-      const c=Math.cos(phase[i]),s=Math.sin(phase[i]);
-      if(limb[i]===2||limb[i]===3){const m=mask[i];aC+=c*m;aS+=s*m;aW+=m;continue;}
-      const bh=bwHead[i],br=bwHeart[i],bg=bwGut[i];
-      hC+=c*bh;hS+=s*bh;hW+=bh; rC+=c*br;rS+=s*br;rW+=br; gC+=c*bg;gS+=s*bg;gW+=bg;
-    }
-    headSync=hW?Math.hypot(hC,hS)/hW:0; heartSync=rW?Math.hypot(rC,rS)/rW:0;
-    gutSync=gW?Math.hypot(gC,gS)/gW:0; armsSync=aW?Math.hypot(aC,aS)/aW:0; airSync=Math.hypot(wC,wS)/N;
+    for(let i=0;i<N;i++){ const ca=Math.cos(air[i]),sa=Math.sin(air[i]); wC+=ca; wS+=sa; if(limb[i]===9)continue; const c=Math.cos(phase[i]),s=Math.sin(phase[i]); if(limb[i]===2||limb[i]===3){const m=mask[i];aC+=c*m;aS+=s*m;aW+=m;continue;} const bh=bwHead[i],br=bwHeart[i],bg=bwGut[i]; hC+=c*bh;hS+=s*bh;hW+=bh; rC+=c*br;rS+=s*br;rW+=br; gC+=c*bg;gS+=s*bg;gW+=bg; }
+    headSync=hW?Math.hypot(hC,hS)/hW:0; heartSync=rW?Math.hypot(rC,rS)/rW:0; gutSync=gW?Math.hypot(gC,gS)/gW:0; armsSync=aW?Math.hypot(aC,aS)/aW:0; airSync=Math.hypot(wC,wS)/N;
     heartPhaseG=Math.atan2(rS,rC); gutPhaseG=Math.atan2(gS,gC);
-    headActG=smooth(headSync,cfg.WAKE.head); heartActG=smooth(heartSync,cfg.WAKE.heart); gutActG=smooth(gutSync,cfg.WAKE.gut);
-    const still=performance.now()-lastInput, gutEnabled=still>cfg.GUTDELAY, gutRamp=gutEnabled?Math.min(1,(still-cfg.GUTDELAY)/30000):0, gutA=(gutActG*gutRamp), nAmp=chaos+cfg.STIR*Math.exp(-still/cfg.STIRTAU);
-    if(blinkT<0){ if(gutEnabled && gutSync>cfg.WAKE.gut && airSync>0.6) gutHold+=dt; else gutHold=Math.max(0,gutHold-dt*1.5);
-      if(gutHold>4500) blinkT=0; }
+    headActG=smooth(headSync,cfg.WAKE.head); const rawHeartAct=smooth(heartSync,cfg.WAKE.heart); gutActG=smooth(gutSync,cfg.WAKE.gut);
+    const tNow=performance.now(); if(headActG>0.5&&lastHeadAct<=0.5)headWokeAt=tNow; lastHeadAct=headActG;
+    const still=tNow-lastInput, gutEnabled=still>cfg.GUTDELAY, nAmp=chaos+cfg.STIR*Math.exp(-still/1500), flatten=Math.min(1,still/cfg.EFLAT);
+    const transDecay=headActG<0.5?1:Math.exp(-(tNow-headWokeAt)/cfg.TRANSTAU);
+    const heartOpen=headActG<0.5?0:smooth(1-transDecay,0.65);
+    const hSet=rawHeartAct*heartOpen; heartActG=hSet; const gutA=gutEnabled?hSet:0;
+    if(blinkT<0){ const fieldUnison=(headSync+heartSync+gutSync+airSync)*0.25; if(gutEnabled && hSet>0.6 && fieldUnison>cfg.BLINKTHRESH) gutHold+=dt; else gutHold=Math.max(0,gutHold-dt*1.5); if(gutHold>1200) blinkT=0; }
     else blinkT+=dt/1000;
     for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
-      const i=idx(x,y), ap=air[i];
-      // AIR: full-screen pond, isotropic, lives behind the body; wakes with the head
-      let apull=0,an=0,bpull=0,bn=0;
-      if(x>0){apull+=Math.sin(air[i-1]-ap);an++; if(limb[i-1]!==9){bpull+=Math.sin(phase[i-1]-ap);bn++;}} if(x<NX-1){apull+=Math.sin(air[i+1]-ap);an++; if(limb[i+1]!==9){bpull+=Math.sin(phase[i+1]-ap);bn++;}}
-      if(y>0){apull+=Math.sin(air[i-NX]-ap);an++; if(limb[i-NX]!==9){bpull+=Math.sin(phase[i-NX]-ap);bn++;}} if(y<NY-1){apull+=Math.sin(air[i+NX]-ap);an++; if(limb[i+NX]!==9){bpull+=Math.sin(phase[i+NX]-ap);bn++;}}
-      apull/=(an||1);
-      const ak=cfg.COUPLE.world*headActG; const aleak=bn>0?cfg.LEAK*heartActG*(0.35+0.65*headActG)*(bpull/bn):0;
-      const agp=cfg.ENT.gut*gutA*Math.sin(gutPhaseG-ap);
-      const an2=headActG>0.02?(Math.random()-.5)*0.42*cfg.NOISE.world*headActG*(1-0.97*heartActG):0;
+      const i=idx(x,y), ap=air[i]; let apull=0,an=0,bpull=0,bn=0;
+      if(x>0){apull+=Math.sin(air[i-1]-ap);an++; if(limb[i-1]!==9){bpull+=Math.sin(phase[i-1]-ap);bn++;}} if(x<NX-1){apull+=Math.sin(air[i+1]-ap);an++; if(limb[i+1]!==9){bpull+=Math.sin(phase[i+1]-ap);bn++;}} if(y>0){apull+=Math.sin(air[i-NX]-ap);an++; if(limb[i-NX]!==9){bpull+=Math.sin(phase[i-NX]-ap);bn++;}} if(y<NY-1){apull+=Math.sin(air[i+NX]-ap);an++; if(limb[i+NX]!==9){bpull+=Math.sin(phase[i+NX]-ap);bn++;}}
+      apull/=(an||1); const ak=cfg.COUPLE.world*headActG, aleak=bn>0?cfg.LEAK*hSet*(bpull/bn):0, agp=cfg.ENT.gut*gutA*Math.sin(gutPhaseG-ap), an2=headActG>0.02?(Math.random()-.5)*0.7*cfg.NOISE.world*headActG*(1-0.95*hSet):0;
       airN[i]=ap+(fb0*0.85*(1+ajit[i]*cfg.JITTER)+ak*apull+aleak+agp+an2)*sc;
-      // BODY: fiber-coupled within limbs
-      if(limb[i]!==9){
-        const p=phase[i], fxi=fx[i],fyi=fy[i],li=limb[i];
-        const ah=Math.pow(Math.abs(fxi),cfg.FB)+0.06, av=Math.pow(Math.abs(fyi),cfg.FB)+0.06;
-        let pull=0,wsum=0;
-        if(x>0&&limb[i-1]!==9){const g=mask[i-1]*ah*(limb[i-1]!==li?cfg.CROSS:1);pull+=Math.sin(phase[i-1]-p)*g;wsum+=g;}
-        if(x<NX-1&&limb[i+1]!==9){const g=mask[i+1]*ah*(limb[i+1]!==li?cfg.CROSS:1);pull+=Math.sin(phase[i+1]-p)*g;wsum+=g;}
-        if(y>0&&limb[i-NX]!==9){const g=mask[i-NX]*av*(limb[i-NX]!==li?cfg.CROSS:1);pull+=Math.sin(phase[i-NX]-p)*g;wsum+=g;}
-        if(y<NY-1&&limb[i+NX]!==9){const g=mask[i+NX]*av*(limb[i+NX]!==li?cfg.CROSS:1);pull+=Math.sin(phase[i+NX]-p)*g;wsum+=g;}
-        pull=wsum>0?pull/wsum:0;
-        let gp=cfg.ENT.body*Math.sin(target-p);
-        if(bwHeart[i]>0.35){ const gh=cfg.GUTHEART*(1+cfg.GHCLICK*clickBoost); gp+=gh*Math.sin(gutPhaseG-p); }
-        let ns=(Math.random()-.5)*nAmp*cfg.NOISE.body*(1-cfg.HEADCALM*bwHead[i]);
-        if(bwGut[i]>0.35 && !gutEnabled){ pull=0; gp=0; ns=(Math.random()-.5)*cfg.GUTCHURN; }
-        next[i]=p+(fb0*(1+0.05*(0.5-ty[i])+bjit[i]*cfg.JITTER)+cfg.GRAD*(x/(NX-1)*2-1)+cfg.COUPLE.body*pull+gp+ns)*sc;
-        ink[i]*=Math.pow(.94,sc);
+      if(limb[i]!==9){ const p=phase[i], fxi=fx[i],fyi=fy[i],li=limb[i]; const ah=Math.pow(Math.abs(fxi),cfg.FB)+0.06, av=Math.pow(Math.abs(fyi),cfg.FB)+0.06; let pull=0,wsum=0;
+        if(x>0&&limb[i-1]!==9){const g=mask[i-1]*ah*(limb[i-1]!==li?cfg.CROSS:1)*(1-cfg.HEADISO*Math.abs(bwHead[i]-bwHead[i-1]));pull+=Math.sin(phase[i-1]-p)*g;wsum+=g;} if(x<NX-1&&limb[i+1]!==9){const g=mask[i+1]*ah*(limb[i+1]!==li?cfg.CROSS:1)*(1-cfg.HEADISO*Math.abs(bwHead[i]-bwHead[i+1]));pull+=Math.sin(phase[i+1]-p)*g;wsum+=g;} if(y>0&&limb[i-NX]!==9){const g=mask[i-NX]*av*(limb[i-NX]!==li?cfg.CROSS:1)*(1-cfg.HEADISO*Math.abs(bwHead[i]-bwHead[i-NX]));pull+=Math.sin(phase[i-NX]-p)*g;wsum+=g;} if(y<NY-1&&limb[i+NX]!==9){const g=mask[i+NX]*av*(limb[i+NX]!==li?cfg.CROSS:1)*(1-cfg.HEADISO*Math.abs(bwHead[i]-bwHead[i+NX]));pull+=Math.sin(phase[i+NX]-p)*g;wsum+=g;} pull=wsum>0?pull/wsum:0;
+        let gp=cfg.ENT.body*Math.sin(target-p); if(bwHeart[i]>0.35){ const gh=cfg.GUTHEART*(1+cfg.GHCLICK*clickBoost)*heartOpen; gp+=gh*Math.sin(gutPhaseG-p); }
+        let ns=(Math.random()-.5)*nAmp*cfg.NOISE.body+(Math.random()-.5)*cfg.TRANSAMP*transDecay*(1-bwHead[i]);
+        const dH=Math.min(1,Math.max(0,(ty[i]-0.18)/0.27)), dT=Math.min(1,Math.max(0,(ty[i]-0.48)/0.30)), gate=((1-dH)+dH*heartOpen)*((1-dT)+dT*hSet), E=entOf(ty[i],flatten)*gate;
+        next[i]=p+(fb0*(1+0.05*(0.5-ty[i])+bjit[i]*cfg.JITTER)+(cfg.COUPLE.body*pull+gp)*E+ns)*sc; ink[i]*=Math.pow(.94,sc);
       }
     }
-    function bg_gate(i){return bwGut[i]>0.4;}
-    air.set(airN); phase.set(next);
-    if(blinkT>3.2 && !cursorGone){canvas.classList.add('gone-cursor');cursorGone=true; if(typeof onDone==='function')setTimeout(onDone,1200);}
+    air.set(airN); phase.set(next); if(blinkT>3.2 && !cursorGone){canvas.classList.add('gone-cursor');cursorGone=true; if(typeof onDone==='function')setTimeout(onDone,1200);}
   }
   function draw(){
-    ctx.globalCompositeOperation='source-over'; ctx.fillStyle='#000'; ctx.fillRect(0,0,w,h);
-    ctx.globalCompositeOperation='lighter';
-    const cw=w/NX, ch=h/NY, cell=Math.max(cw,ch), overall=(headActG+heartActG+gutActG)/3;
-    let gmul=1;
+    ctx.globalCompositeOperation='source-over'; ctx.fillStyle='#000'; ctx.fillRect(0,0,w,h); ctx.globalCompositeOperation='lighter';
+    const cw=w/NX, ch=h/NY, cell=Math.max(cw,ch), overall=(headActG+heartActG+gutActG)/3; let gmul=1;
     if(blinkT>=0){ if(blinkT<0.9) gmul=1+(blinkT/0.9)*4; else if(blinkT<3.2) gmul=Math.max(0,(1-(blinkT-0.9)/2.3))*5; else gmul=0.04; }
-    // AIR backdrop (behind body)
-    // black -> gentle noise -> skin/air ripples -> unison pulses -> gone
-    if(headActG>0.02) for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
-      if((x+y)&1) continue;
-      const i=idx(x,y), a=(Math.cos(air[i])+1)*.5;
-      const edgeProx=Math.exp(-Math.pow(Math.max(0,0.10-mask[i])*18,2));
-      const spread=Math.exp(-Math.max(0,0.10-mask[i])*9);
-      const noise=Math.pow(a,1.45)*0.24*headActG*(1-0.92*heartActG);
-      const ripple=Math.pow((Math.cos(air[i]-heartPhaseG)+1)*.5,2.25)*cfg.RIPPLE*0.52*heartActG*(0.30+0.70*edgeProx)*spread*(1-0.72*gutActG);
-      const pulse=Math.pow((Math.cos(gutPhaseG-air[i])+1)*.5,1.8)*0.46*gutActG;
-      let b=(noise+ripple+pulse)*gmul;
-      if(b<.018)continue;
-      const g=Math.floor(5+Math.min(1,b)*225);
-      ctx.globalAlpha=Math.min(1,.035+b*.48); ctx.fillStyle='rgb('+g+','+g+','+g+')';
-      ctx.beginPath(); ctx.arc((x+.5)*cw,(y+.5)*ch, cell*(1.12+1.0*ripple+0.55*edgeProx), 0, TWO); ctx.fill();
-    }
-    // BODY (on top)
-    for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){
-      const i=idx(x,y); if(limb[i]===9||mask[i]<.06) continue;
-      const aligned=(Math.cos(phase[i])+1)*.5;
-      const gutFloor=(bwGut[i]>0.35)?0.04*(1-gutActG):0;
-      let bright=Math.pow(aligned,1.6)*(.12+mask[i]*.88)+ink[i]*.8+gutFloor; const vis=(bwGut[i]>0.35)?clamp(0.08+0.24*headActG+0.72*gutActG):(0.42+0.58*headActG); bright=clamp(bright*gmul*vis);
-      if(bright<.02)continue;
-      const g=Math.floor(8+bright*247), rad=cell*(0.55+overall*cfg.BLOB)*(.45+bright*.7);
-      ctx.globalAlpha=Math.min(1,(.12+bright*.8)/(1+overall*1.2));
-      ctx.fillStyle='rgb('+g+','+g+','+g+')'; ctx.beginPath(); ctx.arc((x+.5)*cw,(y+.5)*ch,rad,0,TWO); ctx.fill();
-    }
+    if(headActG>0.02) for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){ if((x+y)&1) continue; const i=idx(x,y), a=(Math.cos(air[i])+1)*.5; let b=Math.pow(a,1.5)*0.42*headActG*gmul*(0.8+0.2*heartActG); if(b<.02)continue; const g=Math.floor(6+b*210); ctx.globalAlpha=Math.min(1,.05+b*.5); ctx.fillStyle='rgb('+g+','+g+','+g+')'; ctx.beginPath(); ctx.arc((x+.5)*cw,(y+.5)*ch, cell*1.6, 0, TWO); ctx.fill(); }
+    for(let y=0;y<NY;y++)for(let x=0;x<NX;x++){ const i=idx(x,y); if(limb[i]===9||mask[i]<.06) continue; const aligned=(Math.cos(phase[i])+1)*.5; let bright=Math.pow(aligned,1.6)*(.12+mask[i]*.88)+ink[i]*.8; const vis=(bwGut[i]>0.35)?clamp(0.14+0.4*headActG+0.6*gutActG):(0.42+0.58*headActG); bright=clamp(bright*gmul*vis); if(bright<.02)continue; const g=Math.floor(8+bright*247), rad=cell*(0.55+overall*cfg.BLOB)*(.45+bright*.7); ctx.globalAlpha=Math.min(1,(.12+bright*.8)/(1+overall*1.2)); ctx.fillStyle='rgb('+g+','+g+','+g+')'; ctx.beginPath(); ctx.arc((x+.5)*cw,(y+.5)*ch,rad,0,TWO); ctx.fill(); }
     ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
   }
   function tick(t){const dt=Math.min(48,t-lastT);lastT=t;step(dt);draw();raf=requestAnimationFrame(tick);}
-  init(); lastInput=performance.now(); resize();
-  const onResize=()=>resize(),
-        onDown=e=>trace(e.clientX,e.clientY,e.pressure||1),
-        onMove=e=>{if(e.buttons||e.pointerType==='touch')trace(e.clientX,e.clientY,.6)};
-  window.addEventListener('resize',onResize);
-  canvas.addEventListener('pointerdown',onDown);
-  canvas.addEventListener('pointermove',onMove);
-  canvas.addEventListener('click',e=>trace(e.clientX,e.clientY,.7));
-  raf=requestAnimationFrame(tick);
-  const stop=()=>{if(raf)cancelAnimationFrame(raf);window.removeEventListener('resize',onResize);};
-  stop.cfg=cfg; stop.reset=reset;
-  return stop;
+  init(); lastInput=performance.now(); resize(); const onResize=()=>resize(), onDown=e=>trace(e.clientX,e.clientY,e.pressure||1), onMove=e=>{if(e.buttons||e.pointerType==='touch')trace(e.clientX,e.clientY,.6)};
+  window.addEventListener('resize',onResize); canvas.addEventListener('pointerdown',onDown); canvas.addEventListener('pointermove',onMove); canvas.addEventListener('click',e=>trace(e.clientX,e.clientY,.7)); raf=requestAnimationFrame(tick);
+  const stop=()=>{if(raf)cancelAnimationFrame(raf);window.removeEventListener('resize',onResize);}; stop.cfg=cfg; stop.reset=reset; return stop;
 }
-
 function buildSyncPanel(api){
-  
-  if(!api||!api.cfg)return null;
-  const cfg=api.cfg;
-  const specs=[
-    ['PULSE','pulse/sec',0.05,1.0,0.01],['DRIVE0','start noise',0,4,0.05],['DECAY','noise decay',0.93,1,0.001],
-    ['BLOB','fuzz max',0,3,0.05],['RADIUS','click size',1,6,0.5],['RIPPLE','ripple',0,3,0.05],
-    ['FB','fiber bias',0,5,0.1],['CROSS','cross-limb',0,1,0.02],['GUTDELAY','gut delay ms',0,180000,1000],['JITTER','freq spread',0,1.5,0.01],['STIR','effort noise',0,8,0.1],['STIRTAU','noise decay ms',200,6000,100],['HEADCALM','head calm',0,1,0.05],['GRAD','wave tilt',0,0.06,0.002],['GUTCHURN','gut churn',0,0.2,0.005],['GRASP','grasp breaks',0,2,0.05],['GUTHEART','gut to heart',0,0.1,0.002],['GHCLICK','click boost',0,10,0.5],
-    ['COUPLE.body','cple body',0,0.4,0.005],['COUPLE.world','cple air',0,0.4,0.005],
-    ['ENT.body','ent beat',0,0.1,0.002],['ENT.heart','ent air-heart',0,0.1,0.002],
-    ['ENT.gut','ent air-gut',0,0.08,0.001],['ENT.gutjoin','ent gut-join',0,0.05,0.001],['LEAK','body to air',0,0.3,0.005],
-    ['KNOCK.gut','knock gut',0,2,0.05],['KNOCK.head','knock head',0,2,0.05],
-    ['RESP.head','resp head',0,2,0.02],['RESP.gut','resp gut',0,0.5,0.005],['RESP.arms','resp arms',0,1,0.01],
-    ['NOISE.body','noise body',0,0.25,0.005],['NOISE.world','noise air',0,0.3,0.005],
-    ['WAKE.head','wake head',0.3,0.97,0.01],['WAKE.heart','wake heart',0.3,0.97,0.01],['WAKE.gut','wake gut',0.3,0.995,0.005]
-  ];
-  const get=p=>p.split('.').reduce((o,k)=>o[k],cfg);
-  const set=(p,v)=>{const ks=p.split('.');let o=cfg;for(let i=0;i<ks.length-1;i++)o=o[ks[i]];o[ks[ks.length-1]]=v;};
-  const host=document.createElement('div'); host.id='syncPanel';
-  host.style.cssText='position:fixed;top:8px;right:8px;z-index:99999;font:11px/1.3 monospace;text-align:right;';
-  const tog=document.createElement('button'); tog.textContent='\u25B8 calibration';
-  tog.style.cssText='background:rgba(12,12,12,.55);color:#888;border:1px solid #333;border-radius:5px;padding:3px 8px;cursor:pointer;';
-  const box=document.createElement('div');
-  box.style.cssText='display:none;margin-top:6px;width:214px;max-height:86vh;overflow:auto;background:rgba(12,12,12,.94);color:#ddd;padding:8px;border-radius:6px;text-align:left;';
-  tog.addEventListener('click',function(){var o=box.style.display==='none';box.style.display=o?'block':'none';tog.textContent=(o?'\u25BE':'\u25B8')+' calibration';});
-  host.appendChild(tog); host.appendChild(box);
-  let html='<div style="display:flex;gap:6px;margin-bottom:6px"><button id="spReset" style="flex:1">reset</button><button id="spDump" style="flex:1">dump</button></div>';
-  specs.forEach((sp,i)=>{ html+='<label style="display:block;margin:4px 0 2px">'+sp[1]+' <span id="spv'+i+'" style="color:#9f9"></span><br><input id="spi'+i+'" type="range" min="'+sp[2]+'" max="'+sp[3]+'" step="'+sp[4]+'" style="width:100%"></label>'; });
-  html+='<textarea id="spOut" readonly style="width:100%;height:64px;margin-top:6px;background:#000;color:#9f9;font:10px monospace;border:0"></textarea>';
-  box.innerHTML=html; document.body.appendChild(host);
-  specs.forEach((sp,i)=>{ const inp=host.querySelector('#spi'+i), val=host.querySelector('#spv'+i), cur=+get(sp[0]);
-    inp.value=cur; val.textContent=cur; inp.addEventListener('input',()=>{const v=parseFloat(inp.value);set(sp[0],v);val.textContent=v;}); });
-  host.querySelector('#spReset').addEventListener('click',()=>{api.reset&&api.reset();});
-  host.querySelector('#spDump').addEventListener('click',()=>{host.querySelector('#spOut').value=JSON.stringify(cfg);});
-  return host;
+  if(!api||!api.cfg)return null; const cfg=api.cfg;
+  const specs=[['PULSE','pulse/sec',0.05,1.0,0.01],['DRIVE0','start noise',0,4,0.05],['DECAY','noise decay',0.93,1,0.001],['BLOB','fuzz max',0,3,0.05],['RADIUS','click size',1,6,0.5],['RIPPLE','ripple',0,3,0.05],['FB','fiber bias',0,5,0.1],['CROSS','cross-limb',0,1,0.02],['GUTDELAY','gut delay ms',0,60000,1000],['JITTER','freq spread',0,1.5,0.01],['STIR','effort noise',0,8,0.1],['GUTCHURN','gut churn',0,0.2,0.005],['EFLOOR','dantien entrain',0,1,0.02],['ECURVE','grad curve',0.3,4,0.1],['EFLAT','flatten ms',2000,60000,1000],['TRANSAMP','heart sparkle',0,1,0.02],['TRANSTAU','sparkle ms',1000,30000,500],['HEADISO','head isolate',0,1,0.02],['BLINKTHRESH','blink at',0.4,0.95,0.01],['GRASP','grasp breaks',0,2,0.05],['GUTHEART','gut to heart',0,0.1,0.002],['GHCLICK','click boost',0,10,0.5],['COUPLE.body','cple body',0,0.4,0.005],['COUPLE.world','cple air',0,0.4,0.005],['ENT.body','ent beat',0,0.1,0.002],['ENT.heart','ent air-heart',0,0.1,0.002],['ENT.gut','ent air-gut',0,0.2,0.002],['ENT.gutjoin','ent gut-join',0,0.1,0.002],['LEAK','body to air',0,0.3,0.005],['KNOCK.gut','knock gut',0,2,0.05],['KNOCK.head','knock head',0,2,0.05],['RESP.head','resp head',0,2,0.02],['RESP.gut','resp gut',0,0.5,0.005],['RESP.arms','resp arms',0,1,0.01],['NOISE.body','noise body',0,0.25,0.005],['NOISE.world','noise air',0,0.3,0.005],['WAKE.head','wake head',0.3,0.97,0.01],['WAKE.heart','wake heart',0.3,0.97,0.01],['WAKE.gut','wake gut',0.3,0.98,0.01]];
+  const get=p=>p.split('.').reduce((o,k)=>o[k],cfg); const set=(p,v)=>{const ks=p.split('.');let o=cfg;for(let i=0;i<ks.length-1;i++)o=o[ks[i]];o[ks[ks.length-1]]=v;};
+  const host=document.createElement('div'); host.id='syncPanel'; host.style.cssText='position:fixed;top:8px;right:8px;z-index:99999;font:11px/1.3 monospace;text-align:right;';
+  const tog=document.createElement('button'); tog.textContent='▸ calibration'; tog.style.cssText='background:rgba(12,12,12,.55);color:#888;border:1px solid #333;border-radius:5px;padding:3px 8px;cursor:pointer;';
+  const box=document.createElement('div'); box.style.cssText='display:none;margin-top:6px;width:214px;max-height:86vh;overflow:auto;background:rgba(12,12,12,.94);color:#ddd;padding:8px;border-radius:6px;text-align:left;'; tog.addEventListener('click',function(){var o=box.style.display==='none';box.style.display=o?'block':'none';tog.textContent=(o?'▾':'▸')+' calibration';}); host.appendChild(tog); host.appendChild(box);
+  let html='<div style="display:flex;gap:6px;margin-bottom:6px"><button id="spReset" style="flex:1">reset</button><button id="spDump" style="flex:1">dump</button></div>'; specs.forEach((sp,i)=>{ html+='<label style="display:block;margin:4px 0 2px">'+sp[1]+' <span id="spv'+i+'" style="color:#9f9"></span><br><input id="spi'+i+'" type="range" min="'+sp[2]+'" max="'+sp[3]+'" step="'+sp[4]+'" style="width:100%"></label>'; }); html+='<textarea id="spOut" readonly style="width:100%;height:64px;margin-top:6px;background:#000;color:#9f9;font:10px monospace;border:0"></textarea>'; box.innerHTML=html; document.body.appendChild(host);
+  specs.forEach((sp,i)=>{ const inp=host.querySelector('#spi'+i), val=host.querySelector('#spv'+i), cur=+get(sp[0]); inp.value=cur; val.textContent=cur; inp.addEventListener('input',()=>{const v=parseFloat(inp.value);set(sp[0],v);val.textContent=v;}); }); host.querySelector('#spReset').addEventListener('click',()=>{api.reset&&api.reset();}); host.querySelector('#spDump').addEventListener('click',()=>{host.querySelector('#spOut').value=JSON.stringify(cfg);}); return host;
 }
-
-
-const canvas=document.getElementById("c");let api;function boot(){api=startSyncField(canvas,function(){setTimeout(function(){api&&api.reset&&api.reset();},1600);});buildSyncPanel(api);}boot();
+const canvas=document.getElementById("c");let api;function boot(){api=startSyncField(canvas,function(){setTimeout(function(){api&&api.reset&&api.reset();},1600);});if(typeof buildSyncPanel==="function")buildSyncPanel(api);}boot();
 </script></body></html>
